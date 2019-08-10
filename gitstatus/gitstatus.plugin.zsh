@@ -352,6 +352,7 @@ function gitstatus_start() {
       ${${log_level:#INFO}:+--log-level=$log_level})
 
     local cmd="
+      exec <${(q)req_fifo} >${(q)resp_fifo} 2>${(q)log_file} 3<$lock_file
       echo \$\$
       ${(q)daemon} $daemon_args
       if [[ \$? != (0|10) && \$? -le 128 &&
@@ -369,7 +370,7 @@ function gitstatus_start() {
     # and https://github.com/romkatv/powerlevel10k/issues/97. Note that on macOS setsid has to
     # be installed manually by running  `brew install util-linux`. Unfortunately, none of these
     # helped to resolve https://github.com/romkatv/powerlevel10k/issues/123.
-    zsh -dfmxc $cmd <$req_fifo >$resp_fifo 2>$log_file 3<$lock_file &!
+    zsh -dfmc $cmd </dev/null >/dev/null 2>/dev/null &!
 
     sysopen -w -o cloexec,sync -u req_fd $req_fifo
     sysopen -r -o cloexec -u resp_fd $resp_fifo
