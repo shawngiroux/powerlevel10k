@@ -354,11 +354,13 @@ function gitstatus_start() {
     local cmd="
       exec >${(q)resp_fifo} 2>${(q)log_file}
       echo \$\$
-      ${(q)daemon} $daemon_args <${(q)req_fifo} 3<$lock_file
+      zmodload zsh/system
+      sysopen -r -u req_fd ${(q)req_fifo}
+      ${(q)daemon} $daemon_args <&\$req_fd 3<$lock_file
       if [[ \$? != (0|10) && \$? -le 128 &&
             -z ${(q)GITSTATUS_DAEMON:-} &&
             -f ${(q)daemon}-static ]]; then
-        ${(q)daemon}-static $daemon_args <${(q)req_fifo} 3<$lock_file
+        ${(q)daemon}-static $daemon_args <&\$req_fd 3<$lock_file
       fi
       echo -nE $'bye\x1f0\x1e'"
     local setsid=${commands[setsid]:-/usr/local/opt/util-linux/bin/setsid}
