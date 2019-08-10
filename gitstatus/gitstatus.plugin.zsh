@@ -377,8 +377,6 @@ function gitstatus_start() {
 
     read -u $resp_fd daemon_pid
 
-    rm -f $req_fifo $resp_fifo $lock_file
-
     function _gitstatus_process_response_${name}() {
       local name=${${(%):-%N}#_gitstatus_process_response_}
       (( ARGC == 1 )) && {
@@ -394,6 +392,7 @@ function gitstatus_start() {
     echo -nE $'hello\x1f\x1e' >&$req_fd
     read -r -d $'\x1e' -u $resp_fd -t $timeout reply
     [[ $reply == $'hello\x1f0' ]]
+    rm -f $req_fifo $resp_fifo $lock_file
 
     function _gitstatus_cleanup_$$_${ZSH_SUBSHELL}_${daemon_pid}() {
       emulate -L zsh
