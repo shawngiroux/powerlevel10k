@@ -352,13 +352,13 @@ function gitstatus_start() {
       ${${log_level:#INFO}:+--log-level=$log_level})
 
     local cmd="
-      exec <${(q)req_fifo} >${(q)resp_fifo} 2>${(q)log_file} 3<$lock_file
+      exec >${(q)resp_fifo} 2>${(q)log_file}
       echo \$\$
-      ${(q)daemon} $daemon_args
+      ${(q)daemon} $daemon_args <${(q)req_fifo} 3<$lock_file
       if [[ \$? != (0|10) && \$? -le 128 &&
             -z ${(q)GITSTATUS_DAEMON:-} &&
             -f ${(q)daemon}-static ]]; then
-        ${(q)daemon}-static $daemon_args
+        ${(q)daemon}-static $daemon_args <${(q)req_fifo} 3<$lock_file
       fi
       echo -nE $'bye\x1f0\x1e'"
     local setsid=${commands[setsid]:-/usr/local/opt/util-linux/bin/setsid}
@@ -372,10 +372,9 @@ function gitstatus_start() {
     # helped to resolve https://github.com/romkatv/powerlevel10k/issues/123.
     zsh -dfmc $cmd </dev/null >/dev/null 2>/dev/null &!
 
-    sysopen -w -o cloexec,sync -u req_fd $req_fifo
     sysopen -r -o cloexec -u resp_fd $resp_fifo
-
     read -u $resp_fd daemon_pid
+    sysopen -w -o cloexec,sync -u req_fd $req_fifo
 
     function _gitstatus_process_response_${name}() {
       local name=${${(%):-%N}#_gitstatus_process_response_}
